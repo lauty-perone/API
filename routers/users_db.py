@@ -56,7 +56,8 @@ async def user(user: User):
     dict_user = dict(user)
     #Encripta la contraseña
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated= "auto")
-    dict_user["password"] = pwd_context.hash(dict_user["password"])
+    password = dict_user["password"]
+    dict_user["password"] = pwd_context.hash(password)
     del dict_user["id"]
 
     try:

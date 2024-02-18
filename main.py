@@ -9,7 +9,7 @@ app = FastAPI()
 
 #Incluye los routers a la hora de ejecutar en toda una API
 app.include_router(users_db.router)
-#app.include_router(logueo_jwt.router)
+app.include_router(logueo_jwt.router)
 
 #Muestra una foto
 #http://127.0.0.1:8000/static/images/python.jpg

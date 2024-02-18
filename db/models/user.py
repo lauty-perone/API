@@ -6,3 +6,4 @@ class User(BaseModel):
     username: str
     email: str
     password : str
+    disabled : bool
