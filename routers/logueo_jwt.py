@@ -12,8 +12,8 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_DURATION = 1
 SECRET = "f3a990758534c53db0a85c4e02c36eed98e386d48cf14a3d70409a1f5dccd386"
 
-router = APIRouter(prefix= "/jwtauth",
-                   tags= ["jwtauth"],
+router = APIRouter(prefix= "/login",
+                   tags= ["login"],
                    responses={status.HTTP_404_NOT_FOUND:{
                        "messagge": "No encontrado"
                    }})
@@ -51,7 +51,7 @@ def search_user_db(username : str):
             status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario no es correcto")
 
 #Loguea al usuario y retorna el JWT encriptado
-@router.post("/login")
+@router.post("/token")
 async def login(form: OAuth2PasswordRequestForm = Depends()):
 
     user = search_user_db(form.username)
@@ -61,12 +61,14 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="La contraseña no es correcta")
 
+    #Crea el token con el nombre de usuario y el tiempo de expiración del mismo
     access_token = {"sub": user.username,
                     "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_DURATION)}
 
     return {"access_token": jwt.encode(access_token, SECRET, algorithm=ALGORITHM), 
             "token_type": "bearer"}
 
+#Autoriza al usuario con el token enviado al loguearse y poder tener acceso privilegiado
 async def auth_user(token: str = Depends(oauth2)):
 
     exception = HTTPException(
@@ -74,6 +76,7 @@ async def auth_user(token: str = Depends(oauth2)):
         detail="Credenciales de autenticación inválidas",
         headers={"WWW-Authenticate": "Bearer"})
 
+    #decodifica el token para encontrar el nombre de usuario
     try:
         username = jwt.decode(token, SECRET, algorithms=[ALGORITHM]).get("sub")
         if username is None:
@@ -84,6 +87,7 @@ async def auth_user(token: str = Depends(oauth2)):
 
     return search_user(username)
 
+#Chequea si el usuario esta habilitado a acceder a las opciones del usuario logueado
 async def current_user(user: User = Depends(auth_user)):
     if user.disabled:
         raise HTTPException(
@@ -92,6 +96,8 @@ async def current_user(user: User = Depends(auth_user)):
 
     return user
 
+#Esta operación sirve para comprobar si el usuario esta logueado y autorizado
+#En este caso retorna el perfil del usuario
 @router.get("/users/me")
 async def me(user: User = Depends(current_user)):
     return user
